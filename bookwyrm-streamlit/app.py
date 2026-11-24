@@ -231,57 +231,57 @@ html,body{background:#070a14!important}
 .block-container{padding:20px clamp(16px,3vw,44px) 48px!important;max-width:none!important}
 .stApp,.stApp p,.stApp label,.stApp li,.stApp span,.stApp div{font-family:'Rajdhani','Trebuchet MS',sans-serif;font-weight:600}
 .stApp h1,.stApp h2{font-family:'Press Start 2P',monospace!important;font-weight:400!important}
-.bw-hud{display:flex;align-items:center;gap:14px;padding:10px 14px;border:2px solid var(--cyan);background:var(--panel);box-shadow:0 0 18px rgba(25,240,255,.35),inset 0 0 24px rgba(25,240,255,.07);font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim);margin-bottom:18px}
+.bw-hud{display:flex;align-items:center;gap:14px;padding:10px 14px;border:2px solid var(--cyan);background:var(--panel);box-shadow:0 0 18px rgba(25,240,255,.35),inset 0 0 24px rgba(25,240,255,.07);font-family:'Press Start 2P',monospace;font-size:14px;color:var(--dim);margin-bottom:18px}
 .bw-hud b{color:var(--lime);font-weight:400;text-shadow:0 0 8px rgba(182,255,60,.6)}
 .bw-xp{flex:1;height:12px;border:2px solid var(--cyan);background:#04060d}
 .bw-xp i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--magenta));box-shadow:0 0 10px var(--cyan)}
 .bw-title{margin:0 0 12px;font-family:'Press Start 2P',monospace;font-weight:400;line-height:1.55;font-size:clamp(17px,2.6vw,32px);text-transform:uppercase;color:#fff;text-shadow:3px 0 var(--magenta),-3px 0 var(--cyan),0 0 22px rgba(25,240,255,.5)}
 .bw-title span{display:block}
-.bw-sub{color:var(--dim);font-size:20px;max-width:48ch;margin:0 0 10px}
-.bw-small{font-family:'Press Start 2P',monospace;font-size:10px;line-height:1.8;color:var(--dim);margin:0 0 6px}
+.bw-sub{color:var(--dim);font-size:22px;max-width:48ch;margin:0 0 10px}
+.bw-small{font-family:'Press Start 2P',monospace;font-size:14px;line-height:1.8;color:var(--dim);margin:0 0 6px}
 .bw-small b{color:var(--magenta);font-weight:400}
-.bw-luck{font-family:'Press Start 2P',monospace;font-size:10px;line-height:1.8;color:var(--lime);text-shadow:0 0 8px rgba(182,255,60,.5);margin:0 0 14px}
-.bw-label{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--cyan);margin:10px 0 6px}
+.bw-luck{font-family:'Press Start 2P',monospace;font-size:14px;line-height:1.8;color:var(--lime);text-shadow:0 0 8px rgba(182,255,60,.5);margin:0 0 14px}
+.bw-label{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--cyan);margin:10px 0 6px}
 .bw-card{border:2px solid var(--cyan);background:var(--panel);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 18px rgba(25,240,255,.35),inset 0 0 24px rgba(25,240,255,.07);animation:bwfade .5s ease both}
 .bw-card.lucky{border-color:var(--lime);animation:bwglow 1.4s ease-in-out infinite alternate;box-shadow:0 0 28px rgba(182,255,60,.6),inset 0 0 26px rgba(182,255,60,.12)}
 @keyframes bwglow{from{box-shadow:0 0 14px rgba(182,255,60,.4)}to{box-shadow:0 0 34px rgba(182,255,60,.8)}}
 @keyframes bwfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.bw-call{display:flex;justify-content:space-between;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--dim)}
-.bw-quest{font-family:'Press Start 2P',monospace;font-size:clamp(11px,1vw,14px);line-height:1.8;color:var(--cyan);overflow-wrap:anywhere}
+.bw-call{display:flex;justify-content:space-between;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--dim)}
+.bw-quest{font-family:'Press Start 2P',monospace;font-size:clamp(14px,1.2vw,18px);line-height:1.8;color:var(--cyan);overflow-wrap:anywhere}
 .bw-talk{display:flex;gap:14px;align-items:flex-start}
 .bw-portrait{flex:0 0 auto;width:clamp(72px,9vw,128px);height:clamp(72px,9vw,128px);display:flex;align-items:center;justify-content:center;font-size:clamp(40px,5vw,70px);line-height:1;border:3px solid var(--magenta);background:rgba(0,0,0,.5);box-shadow:0 0 16px rgba(255,61,242,.5)}
 .bw-card.lucky .bw-portrait{border-color:var(--lime);box-shadow:0 0 18px rgba(182,255,60,.7)}
 .bw-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
-.bw-name{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--magenta)}
-.bw-stamp{font-family:'Press Start 2P',monospace;font-size:9px;color:#ffc84a;border:2px solid #ffc84a;padding:4px 6px;margin-left:8px}
+.bw-name{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--magenta)}
+.bw-stamp{font-family:'Press Start 2P',monospace;font-size:13px;color:#ffc84a;border:2px solid #ffc84a;padding:4px 6px;margin-left:8px}
 .bw-card.lucky .bw-stamp{color:#08140a;background:var(--lime);border-color:var(--lime);box-shadow:0 0 12px rgba(182,255,60,.8)}
-.bw-answer{font-size:clamp(21px,1.7vw,28px);line-height:1.45;color:var(--text);overflow-wrap:anywhere;margin:0}
+.bw-answer{font-size:clamp(23px,1.9vw,30px);line-height:1.45;color:var(--text);overflow-wrap:anywhere;margin:0}
 .bw-fn{list-style:none;margin:0;padding:10px 0 0;border-top:2px dashed rgba(141,155,196,.4);display:flex;flex-direction:column;gap:6px}
-.bw-fn li{font-size:16px;line-height:1.35;color:var(--dim)}
+.bw-fn li{font-size:21px;line-height:1.35;color:var(--dim)}
 .bw-fn i{color:var(--cyan);font-style:normal}
-.bw-fn sup{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--lime);margin-right:5px}
-.bw-meter{display:flex;align-items:center;gap:10px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--dim)}
+.bw-fn sup{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--lime);margin-right:5px}
+.bw-meter{display:flex;align-items:center;gap:10px;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--dim)}
 .bw-bar{flex:1;height:12px;border:2px solid var(--lime);background:#04060d}
 .bw-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--cyan));box-shadow:0 0 10px var(--lime)}
-.bw-source{font-family:'Press Start 2P',monospace;font-size:9px;line-height:1.7;color:var(--dim);overflow-wrap:anywhere}
+.bw-source{font-family:'Press Start 2P',monospace;font-size:13px;line-height:1.7;color:var(--dim);overflow-wrap:anywhere}
 .bw-source.bad{color:#ffc84a}
-.bw-note{font-family:'Press Start 2P',monospace;font-size:9px;line-height:1.7;color:#ffc84a}
+.bw-note{font-family:'Press Start 2P',monospace;font-size:13px;line-height:1.7;color:#ffc84a}
 .bw-pop{position:fixed;top:12px;left:50%;z-index:9999;display:flex;align-items:center;gap:14px;max-width:calc(100vw - 24px);padding:10px 18px;background:var(--panel);border:3px solid var(--magenta);box-shadow:0 0 26px rgba(255,61,242,.65);pointer-events:none;animation:bwdrop 2.6s ease forwards}
 .bw-pop.lucky{border-color:var(--lime);box-shadow:0 0 30px rgba(182,255,60,.8)}
 .bw-pop .e{font-size:56px;line-height:1}
-.bw-pop .t{font-family:'Press Start 2P',monospace;font-size:11px;line-height:1.6;color:var(--text)}
+.bw-pop .t{font-family:'Press Start 2P',monospace;font-size:15px;line-height:1.6;color:var(--text)}
 @keyframes bwdrop{0%{opacity:0;transform:translate(-50%,-150%)}12%{opacity:1;transform:translate(-50%,0)}18%{transform:translate(-50%,-6px)}24%{transform:translate(-50%,0)}82%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-150%)}}
 /* inputs and buttons */
 .stTextArea textarea{background:rgba(0,0,0,.45)!important;color:#fff!important;border:2px solid rgba(25,240,255,.55)!important;border-radius:0!important;font-size:21px!important;font-weight:600!important;caret-color:var(--magenta)}
 .stTextArea textarea:focus{border-color:var(--magenta)!important;box-shadow:0 0 14px rgba(255,61,242,.5)!important}
-.stTextArea label p,.stRadio label p{font-family:'Press Start 2P',monospace!important;font-size:10px!important;color:var(--cyan)!important}
+.stTextArea label p,.stRadio label p{font-family:'Press Start 2P',monospace!important;font-size:14px!important;color:var(--cyan)!important}
 .stButton>button{background:linear-gradient(180deg,rgba(25,240,255,.26),rgba(25,240,255,.09));border:2px solid var(--cyan);color:#eafcff;border-radius:4px;box-shadow:0 4px 0 #0b5a66,0 0 10px rgba(25,240,255,.25);font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.04em;text-transform:uppercase;transition:transform .08s,box-shadow .08s,filter .15s}
 .stButton>button:hover{filter:brightness(1.25);color:#fff;border-color:var(--cyan)}
 .stButton>button:active{transform:translateY(3px);box-shadow:0 1px 0 #0b5a66}
 .stButton>button[kind="primary"]{background:linear-gradient(90deg,#d12ac4,#2fb7ff);border:2px solid rgba(255,255,255,.35);box-shadow:0 5px 0 #5b1457,0 0 18px rgba(255,61,242,.45);font-family:'Press Start 2P',monospace;font-size:12px;padding:14px 16px}
 .bw-model{border:2px dashed var(--lime);background:rgba(182,255,60,.07);padding:10px 12px;margin:8px 0}
-.bw-model .l{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--lime);text-shadow:0 0 8px rgba(182,255,60,.6);margin-bottom:6px}
-.bw-model .a{font-size:17px;color:var(--text)}
+.bw-model .l{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--lime);text-shadow:0 0 8px rgba(182,255,60,.6);margin-bottom:6px}
+.bw-model .a{font-size:20px;color:var(--text)}
 .bw-model .a b{color:var(--lime)}
 @media (max-width:900px){.bw-talk{gap:10px}}
 @media (prefers-reduced-motion:reduce){.bw-card,.bw-card.lucky,.bw-pop{animation:none}}
@@ -391,7 +391,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-left, right = st.columns([5, 7], gap="large")
+left, right = st.columns([1, 1], gap="large")
 
 with left:
     st.markdown(
