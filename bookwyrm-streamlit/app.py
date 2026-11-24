@@ -19,7 +19,9 @@ import streamlit.components.v1 as components
 
 import content as C
 
-st.set_page_config(page_title="What Would the Bookwyrm Say?", page_icon="\U0001F409", layout="wide")
+st.set_page_config(page_title="What Would the Bookwyrm Say?", page_icon="\U0001F409", layout="wide",
+                   menu_items={"About": "A fictional book-hoarding dragon answers your silly questions with tangents, "
+                                        "invented footnotes and the occasional Lucky Day. Built with Streamlit."})
 
 LUCK_ODDS = 1 / 6
 STAMPS = ["DEFLECTED", "UNDER REVIEW", "SEE APPENDIX", "TO BE CONTINUED"]
@@ -366,6 +368,25 @@ PARTICLES_JS = """
 <script>
 (function(){
   try{
+    var d=window.parent.document,h=d.head;
+    var desc="Ask the Bookwyrm a silly question. A fictional book-hoarding dragon answers with tangents, invented footnotes, mood emojis and a 1-in-6 Lucky Day with confetti. Free, fun Streamlit app.";
+    function meta(attr,key,val){var m=h.querySelector('meta['+attr+'="'+key+'"]');if(!m){m=d.createElement('meta');m.setAttribute(attr,key);h.appendChild(m)}m.setAttribute('content',val)}
+    meta('name','description',desc);
+    meta('name','keywords','Bookwyrm, funny AI chatbot, book dragon, silly questions, Streamlit app, Groq, Llama, Qwen, gaming UI');
+    meta('name','theme-color','#070a14');
+    meta('property','og:title','What Would the Bookwyrm Say?');
+    meta('property','og:description',desc);
+    meta('property','og:type','website');
+    meta('name','twitter:card','summary');
+    meta('name','twitter:title','What Would the Bookwyrm Say?');
+    meta('name','twitter:description',desc);
+    d.documentElement.setAttribute('lang','en');
+  }catch(e){}
+})();
+</script>
+<script>
+(function(){
+  try{
     var P=window.parent,d=P.document;
     if(d.getElementById('bw-bg')) return;
     var reduce=P.matchMedia&&P.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -583,7 +604,8 @@ else:
                                 args=(start + offset,), use_container_width=True, help=item["q"])
 
 st.markdown(
-    '<p class="bw-sub" style="font-size:15px;margin-top:24px">The Bookwyrm is a fictional character. '
+    '<p class="bw-sub" style="font-size:15px;margin-top:24px">The Bookwyrm is a fictional character, '
+    "and its personality is inspired by a very good friend of mine (who knows exactly who they are). "
     "Every book it cites is invented. Questions you send are passed to an AI model hosted by Groq "
     "when Groq AI is selected, so please don't type anything private.</p>",
     unsafe_allow_html=True,
