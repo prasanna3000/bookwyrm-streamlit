@@ -35,4 +35,4 @@ It started as a dare and a silly weekend project, and now it's yours to share wi
 
 No key? It still works with the Built-in model.
 
-pen it, use the app's Share settings on Community Cloud to invite specific people.
+Cheers!
