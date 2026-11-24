@@ -1,7 +1,7 @@
 """What Would the Bookwyrm Say?
 
 A silly-question app starring a fictional dragon who hoards books and never gives
-a straight answer (except on a lucky day). Replies come from Qwen3 on Groq when a
+a straight answer (except on a lucky day). Replies come from a Groq-hosted model when a
 key is configured in Streamlit secrets, and from a built-in reply bank otherwise.
 """
 import html
@@ -31,7 +31,7 @@ MOODS = {
     "LUCKY DAY": "\U0001F340",
 }
 DEFAULT_BASE = "https://api.groq.com/openai/v1"
-DEFAULT_MODEL = "qwen/qwen3-32b"
+DEFAULT_MODEL = "llama-3.3-70b-versatile"
 MAX_ASKS_PER_SESSION = 40   # per visitor, so one friend cannot drain the shared quota
 MAX_CALLS_PER_MIN = 20      # across everyone, kept under Groq's free-tier limit
 SHELF_SIZE = 12
@@ -46,7 +46,16 @@ def secret(name, default=None):
     return value or default
 
 
-API_KEY = secret("GROQ_API_KEY")
+def clean_key(k):
+    if not k:
+        return None
+    k = str(k).strip().strip("\"'").strip()
+    if k.lower().startswith("bearer "):
+        k = k[7:].strip()
+    return k or None
+
+
+API_KEY = clean_key(secret("GROQ_API_KEY"))
 API_BASE = (secret("GROQ_BASE_URL", DEFAULT_BASE) or DEFAULT_BASE).rstrip("/")
 MODEL = secret("GROQ_MODEL", DEFAULT_MODEL)
 
@@ -120,17 +129,47 @@ def parse_reply(text, lucky):
             "progress": progress, "lucky": bool(lucky)}
 
 
-def qwen_reply(q, lucky):
-    persona = C.PERSONA + (C.LUCKY_NOTE if lucky else "")
+@st.cache_resource
+def _model_cache():
+    return {"id": None}
+
+
+def find_qwen_model():
+    """Ask Groq which Qwen text models this key can use; prefer the newest-looking id."""
     try:
-        resp = requests.post(
-            API_BASE + "/chat/completions",
-            headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-            json={"model": MODEL, "temperature": 0.9, "max_tokens": 1500, "stream": False,
-                  "messages": [{"role": "system", "content": persona},
-                               {"role": "user", "content": "/no_think\nQuestion: " + q}]},
-            timeout=45,
-        )
+        r = requests.get(API_BASE + "/models", headers={"Authorization": f"Bearer {API_KEY}"}, timeout=20)
+        ids = [m.get("id", "") for m in r.json().get("data", [])]
+    except Exception:
+        return None
+    qwen = [i for i in ids if "qwen" in i.lower() and not any(x in i.lower() for x in ("vl", "vision", "guard", "tts", "whisper"))]
+    return sorted(qwen, reverse=True)[0] if qwen else None
+
+
+def _post_chat(model, persona, q):
+    return requests.post(
+        API_BASE + "/chat/completions",
+        headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+        json={"model": model, "temperature": 0.9, "max_tokens": 1500, "stream": False,
+              "messages": [{"role": "system", "content": persona},
+                           {"role": "user", "content": "/no_think\nQuestion: " + q}]},
+        timeout=45,
+    )
+
+
+def qwen_reply(q, lucky):
+    global MODEL
+    persona = C.PERSONA + (C.LUCKY_NOTE if lucky else "")
+    cache = _model_cache()
+    model = cache["id"] or MODEL
+    try:
+        resp = _post_chat(model, persona, q)
+        if resp.status_code == 404:
+            alt = find_qwen_model() or "llama-3.3-70b-versatile"
+            if alt != model:
+                resp = _post_chat(alt, persona, q)
+                if resp.status_code == 200:
+                    cache["id"] = alt
+                    model = alt
     except requests.exceptions.Timeout:
         raise RuntimeError("the model took too long to answer")
     except requests.exceptions.RequestException:
@@ -140,7 +179,11 @@ def qwen_reply(q, lucky):
             message = resp.json().get("error", {}).get("message", "")
         except ValueError:
             message = ""
-        raise RuntimeError(f"HTTP {resp.status_code}" + (f" - {message[:120]}" if message else ""))
+        hint = ""
+        if resp.status_code == 401:
+            hint = (" | key check: starts with gsk_ = " + str(str(API_KEY).startswith("gsk_"))
+                    + ", length = " + str(len(str(API_KEY))) + " (Groq keys are about 56)")
+        raise RuntimeError(f"HTTP {resp.status_code}" + (f" - {message[:120]}" if message else "") + hint)
     try:
         content = resp.json()["choices"][0]["message"]["content"]
     except (KeyError, IndexError, ValueError):
@@ -150,7 +193,7 @@ def qwen_reply(q, lucky):
     except Exception:
         raise RuntimeError("the model replied, but not in the expected JSON format")
     reply["source"] = "qwen"
-    reply["model"] = MODEL
+    reply["model"] = model
     return reply
 
 
@@ -179,9 +222,9 @@ def get_reply(q, engine, again):
     reply, fallback = None, None
     if engine == "qwen":
         if ss.asks >= MAX_ASKS_PER_SESSION:
-            fallback = "you have used all your Qwen questions for this visit"
+            fallback = "you have used all your AI questions for this visit"
         elif not allow_call():
-            fallback = "the shared Qwen quota is busy, try again in a minute"
+            fallback = "the shared Groq quota is busy, try again in a minute"
         else:
             try:
                 reply = qwen_reply(q, lucky)
@@ -231,59 +274,73 @@ html,body{background:#070a14!important}
 .block-container{padding:20px clamp(16px,3vw,44px) 48px!important;max-width:none!important}
 .stApp,.stApp p,.stApp label,.stApp li,.stApp span,.stApp div{font-family:'Rajdhani','Trebuchet MS',sans-serif;font-weight:600}
 .stApp h1,.stApp h2{font-family:'Press Start 2P',monospace!important;font-weight:400!important}
-.bw-hud{display:flex;align-items:center;gap:14px;padding:10px 14px;border:2px solid var(--cyan);background:var(--panel);box-shadow:0 0 18px rgba(25,240,255,.35),inset 0 0 24px rgba(25,240,255,.07);font-family:'Press Start 2P',monospace;font-size:14px;color:var(--dim);margin-bottom:18px}
+.bw-hud{display:flex;align-items:center;flex-wrap:wrap;gap:14px;padding:10px 14px;border:2px solid var(--cyan);background:var(--panel);box-shadow:0 0 18px rgba(25,240,255,.35),inset 0 0 24px rgba(25,240,255,.07);font-family:'Press Start 2P',monospace;font-size:clamp(11px,1.1vw,17px);color:var(--dim);margin-bottom:18px}
 .bw-hud b{color:var(--lime);font-weight:400;text-shadow:0 0 8px rgba(182,255,60,.6)}
-.bw-xp{flex:1;height:12px;border:2px solid var(--cyan);background:#04060d}
+.bw-xp{flex:1;min-width:100px;height:12px;border:2px solid var(--cyan);background:#04060d}
 .bw-xp i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--magenta));box-shadow:0 0 10px var(--cyan)}
-.bw-title{margin:0 0 12px;font-family:'Press Start 2P',monospace;font-weight:400;line-height:1.55;font-size:clamp(17px,2.6vw,32px);text-transform:uppercase;color:#fff;text-shadow:3px 0 var(--magenta),-3px 0 var(--cyan),0 0 22px rgba(25,240,255,.5)}
+.bw-title{margin:0 0 12px;font-family:'Press Start 2P',monospace;font-weight:400;line-height:1.55;font-size:clamp(18px,3vw,44px);text-transform:uppercase;color:#fff;text-shadow:3px 0 var(--magenta),-3px 0 var(--cyan),0 0 22px rgba(25,240,255,.5)}
 .bw-title span{display:block}
-.bw-sub{color:var(--dim);font-size:22px;max-width:48ch;margin:0 0 10px}
-.bw-small{font-family:'Press Start 2P',monospace;font-size:14px;line-height:1.8;color:var(--dim);margin:0 0 6px}
+.bw-sub{color:var(--dim);font-size:clamp(19px,1.7vw,28px);max-width:48ch;margin:0 0 10px}
+.bw-small{font-family:'Press Start 2P',monospace;font-size:clamp(11px,1.1vw,17px);line-height:1.8;color:var(--dim);margin:0 0 6px}
 .bw-small b{color:var(--magenta);font-weight:400}
-.bw-luck{font-family:'Press Start 2P',monospace;font-size:14px;line-height:1.8;color:var(--lime);text-shadow:0 0 8px rgba(182,255,60,.5);margin:0 0 14px}
-.bw-label{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--cyan);margin:10px 0 6px}
+.bw-luck{font-family:'Press Start 2P',monospace;font-size:clamp(11px,1.1vw,17px);line-height:1.8;color:var(--lime);text-shadow:0 0 8px rgba(182,255,60,.5);margin:0 0 14px}
+.bw-label{font-family:'Press Start 2P',monospace;font-size:clamp(11px,1.1vw,17px);color:var(--cyan);margin:10px 0 6px}
 .bw-card{border:2px solid var(--cyan);background:var(--panel);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 18px rgba(25,240,255,.35),inset 0 0 24px rgba(25,240,255,.07);animation:bwfade .5s ease both}
 .bw-card.lucky{border-color:var(--lime);animation:bwglow 1.4s ease-in-out infinite alternate;box-shadow:0 0 28px rgba(182,255,60,.6),inset 0 0 26px rgba(182,255,60,.12)}
 @keyframes bwglow{from{box-shadow:0 0 14px rgba(182,255,60,.4)}to{box-shadow:0 0 34px rgba(182,255,60,.8)}}
 @keyframes bwfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.bw-call{display:flex;justify-content:space-between;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--dim)}
-.bw-quest{font-family:'Press Start 2P',monospace;font-size:clamp(14px,1.2vw,18px);line-height:1.8;color:var(--cyan);overflow-wrap:anywhere}
+.bw-call{display:flex;justify-content:space-between;font-family:'Press Start 2P',monospace;font-size:clamp(10px,1vw,15px);color:var(--dim)}
+.bw-quest{font-family:'Press Start 2P',monospace;font-size:clamp(13px,1.3vw,20px);line-height:1.8;color:var(--cyan);overflow-wrap:anywhere}
 .bw-talk{display:flex;gap:14px;align-items:flex-start}
 .bw-portrait{flex:0 0 auto;width:clamp(72px,9vw,128px);height:clamp(72px,9vw,128px);display:flex;align-items:center;justify-content:center;font-size:clamp(40px,5vw,70px);line-height:1;border:3px solid var(--magenta);background:rgba(0,0,0,.5);box-shadow:0 0 16px rgba(255,61,242,.5)}
 .bw-card.lucky .bw-portrait{border-color:var(--lime);box-shadow:0 0 18px rgba(182,255,60,.7)}
 .bw-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
-.bw-name{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--magenta)}
-.bw-stamp{font-family:'Press Start 2P',monospace;font-size:13px;color:#ffc84a;border:2px solid #ffc84a;padding:4px 6px;margin-left:8px}
+.bw-name{font-family:'Press Start 2P',monospace;font-size:clamp(12px,1.2vw,18px);color:var(--magenta)}
+.bw-stamp{font-family:'Press Start 2P',monospace;font-size:clamp(10px,1vw,15px);color:#ffc84a;border:2px solid #ffc84a;padding:4px 6px;margin-left:8px}
 .bw-card.lucky .bw-stamp{color:#08140a;background:var(--lime);border-color:var(--lime);box-shadow:0 0 12px rgba(182,255,60,.8)}
-.bw-answer{font-size:clamp(23px,1.9vw,30px);line-height:1.45;color:var(--text);overflow-wrap:anywhere;margin:0}
+.bw-answer{font-size:clamp(22px,2vw,34px);line-height:1.45;color:var(--text);overflow-wrap:anywhere;margin:0}
 .bw-fn{list-style:none;margin:0;padding:10px 0 0;border-top:2px dashed rgba(141,155,196,.4);display:flex;flex-direction:column;gap:6px}
-.bw-fn li{font-size:21px;line-height:1.35;color:var(--dim)}
+.bw-fn li{font-size:clamp(18px,1.6vw,26px);line-height:1.35;color:var(--dim)}
 .bw-fn i{color:var(--cyan);font-style:normal}
-.bw-fn sup{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--lime);margin-right:5px}
-.bw-meter{display:flex;align-items:center;gap:10px;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--dim)}
+.bw-fn sup{font-family:'Press Start 2P',monospace;font-size:clamp(10px,.9vw,14px);color:var(--lime);margin-right:5px}
+.bw-meter{display:flex;align-items:center;gap:10px;font-family:'Press Start 2P',monospace;font-size:clamp(10px,1vw,15px);color:var(--dim)}
 .bw-bar{flex:1;height:12px;border:2px solid var(--lime);background:#04060d}
 .bw-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--cyan));box-shadow:0 0 10px var(--lime)}
-.bw-source{font-family:'Press Start 2P',monospace;font-size:13px;line-height:1.7;color:var(--dim);overflow-wrap:anywhere}
+.bw-source{font-family:'Press Start 2P',monospace;font-size:clamp(10px,1vw,15px);line-height:1.7;color:var(--dim);overflow-wrap:anywhere}
 .bw-source.bad{color:#ffc84a}
-.bw-note{font-family:'Press Start 2P',monospace;font-size:13px;line-height:1.7;color:#ffc84a}
+.bw-note{font-family:'Press Start 2P',monospace;font-size:clamp(10px,1vw,15px);line-height:1.7;color:#ffc84a}
 .bw-pop{position:fixed;top:12px;left:50%;z-index:9999;display:flex;align-items:center;gap:14px;max-width:calc(100vw - 24px);padding:10px 18px;background:var(--panel);border:3px solid var(--magenta);box-shadow:0 0 26px rgba(255,61,242,.65);pointer-events:none;animation:bwdrop 2.6s ease forwards}
 .bw-pop.lucky{border-color:var(--lime);box-shadow:0 0 30px rgba(182,255,60,.8)}
-.bw-pop .e{font-size:56px;line-height:1}
-.bw-pop .t{font-family:'Press Start 2P',monospace;font-size:15px;line-height:1.6;color:var(--text)}
+.bw-pop .e{font-size:clamp(40px,4vw,64px);line-height:1}
+.bw-pop .t{font-family:'Press Start 2P',monospace;font-size:clamp(12px,1.2vw,18px);line-height:1.6;color:var(--text)}
 @keyframes bwdrop{0%{opacity:0;transform:translate(-50%,-150%)}12%{opacity:1;transform:translate(-50%,0)}18%{transform:translate(-50%,-6px)}24%{transform:translate(-50%,0)}82%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-150%)}}
 /* inputs and buttons */
-.stTextArea textarea{background:rgba(0,0,0,.45)!important;color:#fff!important;border:2px solid rgba(25,240,255,.55)!important;border-radius:0!important;font-size:21px!important;font-weight:600!important;caret-color:var(--magenta)}
+.stTextArea textarea{background:rgba(0,0,0,.45)!important;color:#fff!important;border:2px solid rgba(25,240,255,.55)!important;border-radius:0!important;font-size:clamp(19px,1.6vw,26px)!important;font-weight:600!important;caret-color:var(--magenta)}
 .stTextArea textarea:focus{border-color:var(--magenta)!important;box-shadow:0 0 14px rgba(255,61,242,.5)!important}
-.stTextArea label p,.stRadio label p{font-family:'Press Start 2P',monospace!important;font-size:14px!important;color:var(--cyan)!important}
+.stTextArea label p,.stRadio label p{font-family:'Press Start 2P',monospace!important;font-size:clamp(11px,1.1vw,17px)!important;color:var(--cyan)!important}
 .stButton>button{background:linear-gradient(180deg,rgba(25,240,255,.26),rgba(25,240,255,.09));border:2px solid var(--cyan);color:#eafcff;border-radius:4px;box-shadow:0 4px 0 #0b5a66,0 0 10px rgba(25,240,255,.25);font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.04em;text-transform:uppercase;transition:transform .08s,box-shadow .08s,filter .15s}
 .stButton>button:hover{filter:brightness(1.25);color:#fff;border-color:var(--cyan)}
 .stButton>button:active{transform:translateY(3px);box-shadow:0 1px 0 #0b5a66}
-.stButton>button[kind="primary"]{background:linear-gradient(90deg,#d12ac4,#2fb7ff);border:2px solid rgba(255,255,255,.35);box-shadow:0 5px 0 #5b1457,0 0 18px rgba(255,61,242,.45);font-family:'Press Start 2P',monospace;font-size:12px;padding:14px 16px}
+.stButton>button[kind="primary"]{background:linear-gradient(90deg,#d12ac4,#2fb7ff);border:2px solid rgba(255,255,255,.35);box-shadow:0 5px 0 #5b1457,0 0 18px rgba(255,61,242,.45);font-family:'Press Start 2P',monospace;font-size:clamp(12px,1vw,16px);padding:14px 16px}
 .bw-model{border:2px dashed var(--lime);background:rgba(182,255,60,.07);padding:10px 12px;margin:8px 0}
-.bw-model .l{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--lime);text-shadow:0 0 8px rgba(182,255,60,.6);margin-bottom:6px}
-.bw-model .a{font-size:20px;color:var(--text)}
+.bw-model .l{font-family:'Press Start 2P',monospace;font-size:clamp(12px,1.2vw,18px);color:var(--lime);text-shadow:0 0 8px rgba(182,255,60,.6);margin-bottom:6px}
+.bw-model .a{font-size:clamp(18px,1.5vw,24px);color:var(--text)}
 .bw-model .a b{color:var(--lime)}
-@media (max-width:900px){.bw-talk{gap:10px}}
+.stButton>button{min-height:46px;height:auto;font-size:clamp(15px,1.25vw,21px)}
+.stButton>button p{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.15;font-size:inherit!important}
+@media (max-width:900px){
+  [data-testid="stHorizontalBlock"]:has(.bw-title){flex-wrap:wrap!important;gap:8px!important}
+  [data-testid="stHorizontalBlock"]:has(.bw-title)>[data-testid="stColumn"]{min-width:100%!important;flex:1 1 100%!important}
+  .bw-talk{gap:10px}
+}
+@media (max-width:640px){
+  .block-container{padding:12px 12px 40px!important}
+  [data-testid="stHorizontalBlock"]:not(:has(.bw-title)){flex-wrap:wrap!important;gap:8px!important}
+  [data-testid="stHorizontalBlock"]:not(:has(.bw-title))>[data-testid="stColumn"]{min-width:calc(50% - 8px)!important;flex:1 1 calc(50% - 8px)!important}
+  [data-testid="stHorizontalBlock"]:not(:has(.bw-title)):has(>[data-testid="stColumn"]:nth-child(4))>[data-testid="stColumn"]{min-width:calc(33.3% - 8px)!important;flex:1 1 calc(33.3% - 8px)!important}
+  .bw-card{padding:12px}
+  .bw-title{text-shadow:2px 0 var(--magenta),-2px 0 var(--cyan)}
+}
 @media (prefers-reduced-motion:reduce){.bw-card,.bw-card.lucky,.bw-pop{animation:none}}
 """
 st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
@@ -409,16 +466,16 @@ with left:
     for i, chip in enumerate(C.CHIPS):
         chip_cols[i % 3].button(chip, key=f"chip{i}", on_click=use_chip, args=(chip,), use_container_width=True)
 
-    options = ["Built-in", "Qwen3"] if API_KEY else ["Built-in"]
+    options = ["Built-in", "Groq AI"] if API_KEY else ["Built-in"]
     st.markdown('<div class="bw-model"><div class="l">&#9654; SELECT MODEL</div></div>', unsafe_allow_html=True)
     choice = st.radio("Select model", options, index=len(options) - 1, horizontal=True,
                       key="engine", label_visibility="collapsed")
-    engine = "qwen" if choice == "Qwen3" else "builtin"
-    active = f"QWEN3 · {MODEL}" if engine == "qwen" else "BUILT-IN BOOKWYRM (NO MODEL)"
+    engine = "qwen" if choice == "Groq AI" else "builtin"
+    active = f"GROQ AI · {MODEL}" if engine == "qwen" else "BUILT-IN BOOKWYRM (NO MODEL)"
     st.markdown(f'<div class="bw-model"><div class="a">Active model: <b>{esc(active)}</b></div></div>',
                 unsafe_allow_html=True)
     if not API_KEY:
-        st.markdown('<p class="bw-note">Qwen3 is off because no GROQ_API_KEY is set. '
+        st.markdown('<p class="bw-note">Groq AI is off because no GROQ_API_KEY is set. '
                     "See the README to turn it on.</p>", unsafe_allow_html=True)
 
     st.button("SEND ▶", key="send", type="primary", on_click=start_send, use_container_width=True)
@@ -458,7 +515,7 @@ with right:
     if rep.get("fallback"):
         source = f"BUILT-IN (FALLBACK: {rep['fallback']})"
     elif rep.get("source") == "qwen":
-        source = f"QWEN3 · {rep.get('model', '')}"
+        source = f"GROQ AI · {rep.get('model', '')}"
     else:
         source = "BUILT-IN"
     footnotes = "".join(
@@ -510,7 +567,7 @@ else:
 
 st.markdown(
     '<p class="bw-sub" style="font-size:15px;margin-top:24px">The Bookwyrm is a fictional character. '
-    "Every book it cites is invented. Questions you send are passed to a Qwen3 model hosted by Groq "
-    "when Qwen3 is selected, so please don't type anything private.</p>",
+    "Every book it cites is invented. Questions you send are passed to an AI model hosted by Groq "
+    "when Groq AI is selected, so please don't type anything private.</p>",
     unsafe_allow_html=True,
 )
