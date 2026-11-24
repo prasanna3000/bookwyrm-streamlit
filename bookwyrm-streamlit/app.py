@@ -149,7 +149,7 @@ def _post_chat(model, persona, q):
     return requests.post(
         API_BASE + "/chat/completions",
         headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-        json={"model": model, "temperature": 0.9, "max_tokens": 1500, "stream": False,
+        json={"model": model, "temperature": 0.9, "max_tokens": 600, "stream": False,
               "messages": [{"role": "system", "content": persona},
                            {"role": "user", "content": "/no_think\nQuestion: " + q}]},
         timeout=45,
@@ -161,15 +161,32 @@ def qwen_reply(q, lucky):
     persona = C.PERSONA + (C.LUCKY_NOTE if lucky else "")
     cache = _model_cache()
     model = cache["id"] or MODEL
+    def unusable(r):
+        if r.status_code in (404, 413):
+            return True
+        if r.status_code == 429:
+            try:
+                msg = r.json().get("error", {}).get("message", "").lower()
+            except ValueError:
+                msg = ""
+            return "too large" in msg
+        return False
+
     try:
         resp = _post_chat(model, persona, q)
-        if resp.status_code == 404:
-            alt = find_qwen_model() or "llama-3.3-70b-versatile"
-            if alt != model:
+        if unusable(resp):
+            tried = {model}
+            for alt in (find_qwen_model(), "llama-3.3-70b-versatile"):
+                if not alt or alt in tried:
+                    continue
+                tried.add(alt)
                 resp = _post_chat(alt, persona, q)
                 if resp.status_code == 200:
                     cache["id"] = alt
                     model = alt
+                    break
+                if not unusable(resp):
+                    break
     except requests.exceptions.Timeout:
         raise RuntimeError("the model took too long to answer")
     except requests.exceptions.RequestException:
