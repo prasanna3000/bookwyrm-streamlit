@@ -4,7 +4,7 @@
 
 | Desktop | Mobile |
 |---|---|
-| ![Desktop view](docs/desktop.png) | ![Mobile view](docs/mobile.png) |
+| ![Desktop view](bookwyrm-streamlit/docs/desktop.png) | ![Mobile view](bookwyrm-streamlit/docs/mobile.png) |
 
 A gaming-style Streamlit app. Ask a silly question and a fictional book-hoarding dragon answers with a tangent,
 invented footnotes and a mood emoji. About one question in six is a lucky day, with a straight, correct answer and confetti.
