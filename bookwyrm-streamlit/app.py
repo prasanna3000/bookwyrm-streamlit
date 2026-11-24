@@ -225,7 +225,8 @@ CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap');
 :root{--cyan:#19f0ff;--magenta:#ff3df2;--lime:#b6ff3c;--dim:#8d9bc4;--text:#e6ecff;--panel:rgba(10,15,32,.86)}
 html,body{background:#070a14!important}
-.stApp{background:radial-gradient(900px 500px at 15% -10%,rgba(255,61,242,.16),transparent 60%),radial-gradient(900px 500px at 100% 20%,rgba(25,240,255,.14),transparent 60%)!important;position:relative;z-index:1}
+.stApp{background:radial-gradient(900px 500px at 15% -10%,rgba(255,61,242,.16),transparent 60%),radial-gradient(900px 500px at 100% 20%,rgba(25,240,255,.14),transparent 60%)!important}
+[data-testid="stAppViewContainer"]{z-index:1}
 [data-testid="stHeader"],[data-testid="stToolbar"],footer,#MainMenu{display:none!important}
 .block-container{padding:20px clamp(16px,3vw,44px) 48px!important;max-width:none!important}
 .stApp,.stApp p,.stApp label,.stApp li,.stApp span,.stApp div{font-family:'Rajdhani','Trebuchet MS',sans-serif;font-weight:600}
